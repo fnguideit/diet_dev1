@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'fast_status.dart';
 import 'fast_history.dart';
 import 'fast_weight.dart';
@@ -30,9 +31,20 @@ class _HomeControllerState
   final PageStorageBucket bucket = PageStorageBucket();
 
   int _selectedIndex = 0;
+  int _pState = 0;
+  DateTime backbuttonpressedTime;
 
   Widget _bottomNavigationBar(int selectedIndex) => BottomNavigationBar(
-    onTap: (int index) => setState(() => _selectedIndex = index),
+    onTap: (int index) => setState(() {
+      _pState = _selectedIndex;
+      _selectedIndex = index;
+
+      Fluttertoast.showToast(
+          msg: "탭:" + index.toString(),
+          backgroundColor: Colors.black,
+          textColor: Colors.white
+      );
+    }),
     type: BottomNavigationBarType.fixed,
     currentIndex: selectedIndex,
     items: const <BottomNavigationBarItem>[
@@ -44,12 +56,38 @@ class _HomeControllerState
   );
 
   @override
+  void initState() {
+    super.initState();
+  }
+  Future<bool> _onWillPop() async {
+    setState(() {
+      _selectedIndex = _pState;
+    });
+
+    DateTime currentTime = DateTime.now();
+    bool backButton = backbuttonpressedTime == null || currentTime.difference(backbuttonpressedTime) > Duration(seconds: 1);
+    if (backButton) {
+      backbuttonpressedTime = currentTime;
+      Fluttertoast.showToast(
+          msg: "Tab Index => " + _selectedIndex.toString(),
+          backgroundColor: Colors.black,
+          textColor: Colors.white);
+
+      return false;
+    }
+    return true;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      bottomNavigationBar: _bottomNavigationBar(_selectedIndex),
-      body: PageStorage(
-        child: pages[_selectedIndex],
-        bucket: bucket,
+    return WillPopScope(
+      onWillPop: _onWillPop ,
+      child: new Scaffold(
+        bottomNavigationBar: _bottomNavigationBar(_selectedIndex),
+        body: PageStorage(
+          child: pages[_selectedIndex],
+          bucket: bucket,
+        ),
       ),
     );
   }
